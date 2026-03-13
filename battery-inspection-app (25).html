@@ -1,0 +1,1591 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ตรวจสอบความปลอดภัยสถานที่ชาร์จแบตเตอรี่ก่อนใช้งาน</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Sarabun', sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; }
+
+  /* ── screens ── */
+  .screen { display: none; min-height: 100vh; padding: 24px; background: #f8fafc; }
+  .screen.active { display: block; }
+
+  .inner { max-width: 640px; margin: 0 auto; }
+  .inner-wide { max-width: 800px; margin: 0 auto; }
+
+  /* ── card ── */
+  .card { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 4px rgba(0,0,0,.05); }
+  .card-title { font-size: 13px; color: #d97706; font-weight: 700; margin-bottom: 16px; letter-spacing: 1px; }
+
+  /* ── header banner ── */
+  .form-banner { background: linear-gradient(135deg,#f59e0b,#d97706); border-radius: 16px; padding: 20px 24px; margin-bottom: 24px; }
+  .form-banner .sub { font-size: 11px; color: rgba(0,0,0,.6); letter-spacing: 2px; text-transform: uppercase; }
+  .form-banner .title { font-size: 20px; font-weight: 800; color: #0f172a; margin-top: 4px; }
+  .form-banner .point { font-size: 13px; color: rgba(0,0,0,.7); margin-top: 4px; }
+
+  /* ── inputs ── */
+  input, select, textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px;
+    font-family: 'Sarabun', sans-serif; font-size: 14px; color: #1e293b;
+    background: #f8fafc; transition: border-color .2s; outline: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: #d97706; }
+  label { font-size: 12px; color: #64748b; display: block; margin-bottom: 6px; }
+  .field { margin-bottom: 14px; }
+  .row-2 { display: flex; gap: 12px; flex-wrap: wrap; }
+  .row-2 > div { flex: 1; min-width: 160px; }
+  .err-msg { font-size: 11px; color: #dc2626; margin-top: 4px; display: none; }
+  .err-msg.show { display: block; }
+  .err-alert { font-size: 12px; color: #dc2626; padding: 8px 12px; background: rgba(220,38,38,.07); border-radius: 6px; margin-bottom: 12px; display: none; }
+  .err-alert.show { display: block; }
+
+  /* ── checklist row ── */
+  .check-row {
+    display: flex; align-items: center; gap: 12px; padding: 12px;
+    margin-bottom: 8px; border-radius: 10px; background: #f8fafc;
+    border: 1px solid #e2e8f0; transition: all .2s;
+  }
+  .check-row.normal { background: rgba(34,197,94,.06); border-color: rgba(34,197,94,.3); }
+  .check-row.abnormal { background: rgba(220,38,38,.06); border-color: rgba(220,38,38,.3); }
+  .check-num {
+    width: 28px; height: 28px; border-radius: 50%; background: #cbd5e1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; transition: background .2s;
+  }
+  .check-row.normal .check-num { background: #22c55e; }
+  .check-row.abnormal .check-num { background: #dc2626; }
+  .check-label { flex: 1; font-size: 14px; color: #334155; }
+  .check-select {
+    padding: 6px 10px; border-radius: 6px; font-size: 13px; font-weight: 600;
+    min-width: 130px; width: auto;
+    border: 1px solid #cbd5e1; color: #64748b; background: #fff;
+  }
+  .check-row.normal .check-select { border-color: #22c55e; color: #15803d; }
+  .check-row.abnormal .check-select { border-color: #dc2626; color: #dc2626; }
+
+  /* ── result banner ── */
+  .result-banner {
+    border-radius: 12px; padding: 16px 20px; margin-bottom: 16px;
+    border: 2px solid; display: none;
+  }
+  .result-banner.show { display: block; }
+  .result-banner.normal { background: rgba(34,197,94,.1); border-color: #22c55e; }
+  .result-banner.abnormal { background: rgba(220,38,38,.1); border-color: #dc2626; }
+  .result-banner .rl { font-size: 12px; color: #64748b; margin-bottom: 4px; }
+  .result-banner .rv { font-size: 20px; font-weight: 800; }
+  .result-banner.normal .rv { color: #16a34a; }
+  .result-banner.abnormal .rv { color: #dc2626; }
+
+  /* ── buttons ── */
+  .btn-primary {
+    width: 100%; padding: 14px; background: linear-gradient(135deg,#f59e0b,#d97706);
+    color: #0f172a; border: none; border-radius: 10px; font-size: 15px;
+    font-weight: 800; cursor: pointer; font-family: 'Sarabun', sans-serif;
+    transition: filter .2s;
+  }
+  .btn-primary:hover { filter: brightness(.95); }
+  .btn-primary:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; filter: none; }
+  .btn-secondary {
+    padding: 14px 20px; background: transparent; color: #64748b;
+    border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px;
+    cursor: pointer; font-family: 'Sarabun', sans-serif;
+  }
+  .btn-blue {
+    padding: 10px 18px; background: linear-gradient(135deg,#2563eb,#1d4ed8);
+    color: #fff; border: none; border-radius: 8px; font-weight: 700;
+    cursor: pointer; font-size: 13px; font-family: 'Sarabun', sans-serif;
+    white-space: nowrap; box-shadow: 0 2px 8px rgba(37,99,235,.25);
+  }
+  .btn-red-sm {
+    padding: 7px 14px; background: #fff; color: #dc2626;
+    border: 1px solid #dc2626; border-radius: 8px; font-weight: 600;
+    cursor: pointer; font-size: 12px; font-family: 'Sarabun', sans-serif;
+    transition: all .2s; white-space: nowrap;
+  }
+  .btn-red-sm:hover { background: #fef2f2; }
+  .btn-green {
+    padding: 10px 20px; background: linear-gradient(135deg,#22c55e,#16a34a);
+    color: #fff; border: none; border-radius: 8px; font-weight: 700;
+    cursor: pointer; font-size: 13px; font-family: 'Sarabun', sans-serif;
+    white-space: nowrap;
+  }
+  .btn-back {
+    background: transparent; border: 1px solid #cbd5e1; color: #64748b;
+    border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 13px;
+    font-family: 'Sarabun', sans-serif;
+  }
+  .btn-back:hover { background: #f1f5f9; }
+  .btn-row { display: flex; gap: 12px; }
+
+  /* ── home stats ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 24px; }
+  .stat-card {
+    background: #fff; border-radius: 12px; padding: 16px; text-align: center;
+    border: 1px solid #e2e8f0; box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  }
+  .stat-num { font-size: 28px; font-weight: 800; }
+  .stat-lbl { font-size: 11px; color: #94a3b8; }
+
+  /* ── action cards ── */
+  .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .action-btn {
+    padding: 16px; background: #fff; color: #1e293b;
+    border: 1px solid #e2e8f0; border-radius: 12px; font-size: 14px;
+    font-weight: 700; cursor: pointer; display: flex; flex-direction: column;
+    align-items: center; gap: 6px; position: relative;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05); font-family: 'Sarabun', sans-serif;
+    transition: filter .2s;
+  }
+  .action-btn:hover { filter: brightness(.97); }
+  .action-btn .icon { font-size: 28px; }
+  .action-btn .lbl { color: #475569; }
+  .badge {
+    position: absolute; top: 10px; right: 10px;
+    background: #dc2626; color: #fff; border-radius: 50%;
+    width: 20px; height: 20px; display: flex; align-items: center;
+    justify-content: center; font-size: 11px; font-weight: 800;
+  }
+
+  /* ── start form card ── */
+  .start-card {
+    background: #fff; border-radius: 16px; padding: 20px;
+    margin-bottom: 12px; border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  }
+
+  /* ── pdf section ── */
+  .pdf-row { display: flex; gap: 10px; align-items: flex-end; }
+  .pdf-row > div:first-child { flex: 1; }
+
+  /* ── header bar ── */
+  .page-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+  .page-header-info .sub { font-size: 11px; color: #94a3b8; letter-spacing: 2px; }
+  .page-header-info .title { font-size: 20px; font-weight: 800; color: #1e293b; }
+
+  /* ── tabs ── */
+  .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .tab-btn {
+    padding: 8px 20px; border-radius: 8px; border: none; cursor: pointer;
+    font-size: 13px; font-family: 'Sarabun', sans-serif; font-weight: 400;
+    background: #e2e8f0; color: #64748b; transition: all .2s;
+  }
+  .tab-btn.active { background: #f59e0b; color: #0f172a; font-weight: 700; }
+
+  /* ── record card ── */
+  .rec-card {
+    background: #fff; border-radius: 12px; padding: 20px;
+    margin-bottom: 12px; border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  }
+  .rec-card.abnormal { border-color: rgba(220,38,38,.25); }
+  .rec-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+  .rec-name { font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 2px; }
+  .rec-sub { font-size: 13px; color: #64748b; }
+  .rec-detail { margin-top: 8px; font-size: 13px; color: #92400e; background: rgba(251,191,36,.1); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(251,191,36,.2); }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+  .chip {
+    font-size: 10px; padding: 2px 6px; border-radius: 4px;
+    font-weight: 700;
+  }
+  .chip.normal { background: rgba(34,197,94,.1); color: #16a34a; border: 1px solid rgba(34,197,94,.2); }
+  .chip.abnormal { background: rgba(220,38,38,.1); color: #dc2626; border: 1px solid rgba(220,38,38,.2); }
+
+  /* ── status pill ── */
+  .pill {
+    font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+    display: inline-block;
+  }
+  .pill.normal { background: rgba(22,163,74,.1); color: #16a34a; }
+  .pill.abnormal { background: rgba(220,38,38,.1); color: #dc2626; }
+  .pill.approved { background: rgba(37,99,235,.08); color: #2563eb; font-size: 11px; }
+  .pill-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+  .pill-time { font-size: 12px; color: #94a3b8; }
+
+  /* ── history stats ── */
+  .hist-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+  .hist-stat { background: #fff; border-radius: 10px; padding: 14px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.05); }
+  .hist-stat .n { font-size: 24px; font-weight: 800; }
+  .hist-stat .l { font-size: 11px; color: #64748b; }
+
+  /* ── filter row ── */
+  .filter-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .filter-row input, .filter-row select { width: auto; }
+
+  /* ── empty state ── */
+  .empty { text-align: center; padding: 60px; color: #94a3b8; }
+  .empty .ico { font-size: 48px; margin-bottom: 12px; }
+
+  /* ── today list ── */
+  .today-item {
+    background: #fff; border-radius: 10px; padding: 12px 16px; margin-bottom: 8px;
+    display: flex; justify-content: space-between; align-items: center;
+    border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  .today-item.abnormal { border-color: rgba(220,38,38,.2); }
+  .today-item .ti-name { font-weight: 600; font-size: 13px; color: #1e293b; }
+  .today-item .ti-time { font-size: 11px; color: #94a3b8; }
+
+  /* ── home header ── */
+  .home-header-box {
+    background: linear-gradient(135deg, #1e3a5f 0%, #1e40af 60%, #0f172a 100%);
+    border-radius: 20px;
+    padding: 28px 28px 24px 28px;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(30,58,95,0.18);
+  }
+  .home-header-box::before {
+    content: "🔋";
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 72px;
+    opacity: 0.10;
+    line-height: 1;
+  }
+  .home-header-box::after {
+    content: "";
+    position: absolute;
+    top: -30px; right: -30px;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+    border: 2px solid rgba(255,255,255,0.08);
+  }
+  .home-tag {
+    display: inline-flex; align-items: center;
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px; padding: 4px 14px; margin-bottom: 14px;
+    font-size: 11px; color: #fbbf24; font-weight: 700; letter-spacing: 2px;
+  }
+  .home-h1 { font-size: 24px; font-weight: 800; line-height: 1.3; color: #fff; margin-bottom: 6px; }
+  .home-h1 span { color: #fbbf24; }
+  .home-sub { color: rgba(255,255,255,0.55); font-size: 13px; margin-bottom: 0; }
+
+  /* ── approved stamp ── */
+  .approved-stamp { font-size: 12px; color: #16a34a; font-weight: 600; }
+
+  /* ── toast ── */
+  #verify-modal.open { display: flex !important; }
+  #pin-modal.open { display: flex !important; }
+  .pin-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid #cbd5e1; background: transparent; transition: all .15s;
+  }
+  .pin-dot.filled { background: #1e293b; border-color: #1e293b; }
+  .pin-dot.error { background: #dc2626; border-color: #dc2626; }
+  .pin-key {
+    padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0;
+    background: #f8fafc; font-size: 20px; font-weight: 700; color: #1e293b;
+    cursor: pointer; font-family: 'Sarabun', sans-serif; transition: all .1s;
+  }
+  .pin-key:active { background: #e2e8f0; transform: scale(.95); }
+
+  #toast {
+    position: fixed; top: 20px; right: 20px; z-index: 9999;
+    color: #fff; padding: 12px 20px; border-radius: 10px;
+    font-weight: 600; font-size: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.2);
+    opacity: 0; pointer-events: none; transition: opacity .3s;
+  }
+  #toast.show { opacity: 1; pointer-events: auto; }
+
+  @media (max-width: 480px) {
+    .hist-stats { grid-template-columns: repeat(2,1fr); }
+    .stats-grid { grid-template-columns: repeat(3,1fr); }
+    .check-row { flex-wrap: wrap; }
+    .check-select { min-width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN: HOME
+════════════════════════════════════════════════ -->
+<div id="screen-home" class="screen active">
+  <div class="inner">
+    <div class="home-header-box">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+        <div class="home-tag">🛡️ BATTERY SAFETY SYSTEM</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="sync-status" style="font-size:11px;font-weight:600;color:#16a34a;"></span>
+          <button onclick="loadRecords()" title="รีเฟรชข้อมูล" style="
+            background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);
+            color:#fff;border-radius:8px;padding:4px 10px;cursor:pointer;
+            font-size:12px;font-family:'Sarabun',sans-serif;">🔄 รีเฟรช</button>
+        </div>
+      </div>
+      <h1 class="home-h1">ตรวจสอบความปลอดภัย<br><span>สถานที่ชาร์จแบตเตอรี่ก่อนใช้งาน</span></h1>
+      <p class="home-sub">Battery Charging Station Safety Inspection Before Use</p>
+    </div>
+
+    <!-- stats -->
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-num" id="stat-today" style="color:#d97706">0</div><div class="stat-lbl">📋 วันนี้</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-normal" style="color:#16a34a">0</div><div class="stat-lbl">✓ ปกติ</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-abnormal" style="color:#dc2626">0</div><div class="stat-lbl">✗ ผิดปกติ</div></div>
+    </div>
+
+    <!-- start form -->
+    <div class="start-card">
+      <div class="card-title">🔋 เริ่มการตรวจสอบ</div>
+      <label>เลือกจุดชาร์จ *</label>
+      <select id="home-point" onchange="homePointChange()" style="margin-bottom:12px;font-size:15px;padding:12px;">
+        <option value="">-- เลือกจุดชาร์จ --</option>
+        <option value="อาคาร B3 ชั้น 1 (DS Domestic)">อาคาร B3 ชั้น 1 (DS Domestic)</option>
+        <option value="อาคาร B4 ชั้น 1 จุดโหลดงาน (DS Export)">อาคาร B4 ชั้น 1 จุดโหลดงาน (DS Export)</option>
+        <option value="อาคาร B4 ชั้น 1 หน้าห้องน้ำ (DS Export)">อาคาร B4 ชั้น 1 หน้าห้องน้ำ (DS Export)</option>
+        <option value="other">อื่นๆ (ระบุ)</option>
+      </select>
+      <div id="home-point-other-wrap" style="display:none;margin-bottom:12px;">
+        <input type="text" id="home-point-other" placeholder="ระบุจุดชาร์จ..." oninput="homeOtherInput()" style="font-size:14px;padding:10px 12px;">
+      </div>
+      <button class="btn-primary" id="btn-start" disabled onclick="startForm()">เริ่มกรอกแบบฟอร์มตรวจสอบ →</button>
+    </div>
+
+    <!-- supervisor & history -->
+    <div class="action-grid" style="grid-template-columns:repeat(3,1fr);">
+      <button class="action-btn" onclick="requestPin('manager','🦺','จป. / หัวหน้างาน','รหัส 4 หลัก')">
+        <span id="mgr-badge" class="badge" style="display:none">0</span>
+        <span class="icon">🦺</span><span class="lbl">จป.หัวหน้างาน</span>
+      </button>
+      <button class="action-btn" onclick="requestPin('supervisor','👔','Supervisor','รหัส 4 หลัก (Supervisor เท่านั้น)')">
+        <span id="sup-badge" class="badge" style="display:none">0</span>
+        <span class="icon">👔</span><span class="lbl">Supervisor</span>
+      </button>
+      <button class="action-btn" onclick="showScreen('history')">
+        <span class="icon">📊</span><span class="lbl">ประวัติการตรวจ</span>
+      </button>
+    </div>
+
+    <!-- import legacy data -->
+    <div style="text-align:center;margin-bottom:8px;">
+      <button onclick="importFromLocalStorage()" style="
+        padding:8px 16px;background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;
+        border-radius:8px;font-size:12px;cursor:pointer;font-family:'Sarabun',sans-serif;">
+        📦 นำเข้าข้อมูลเก่าสู่ Google Sheets
+      </button>
+    </div>
+
+    <!-- today list -->
+    <div id="today-section" style="display:none;margin-top:20px;">
+      <div style="font-size:13px;color:#94a3b8;margin-bottom:10px;">รายการวันนี้</div>
+      <div id="today-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN: FORM
+════════════════════════════════════════════════ -->
+<div id="screen-form" class="screen">
+  <div class="inner">
+    <div class="form-banner">
+      <div class="sub">แบบฟอร์มตรวจสอบ</div>
+      <div class="title">ตรวจสอบความปลอดภัยสถานที่ชาร์จแบตเตอรี่ก่อนใช้งาน</div>
+      <div class="point" id="form-point-label">📍</div>
+    </div>
+
+    <!-- general info -->
+    <div class="card">
+      <div class="card-title">ข้อมูลทั่วไป</div>
+      <div class="row-2">
+        <div class="field">
+          <label>ชื่อผู้ตรวจ *</label>
+          <input type="text" id="f-inspector" placeholder="ระบุชื่อ-นามสกุล" oninput="clearErr('err-inspector')">
+          <div class="err-msg" id="err-inspector">กรุณาระบุชื่อผู้ตรวจ</div>
+        </div>
+        <div class="field">
+          <label>แผนก *</label>
+          <input type="text" id="f-department" placeholder="ระบุชื่อแผนก" oninput="clearErr('err-department')">
+          <div class="err-msg" id="err-department">กรุณาระบุแผนก</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <div class="field">
+          <label>วันที่ตรวจ</label>
+          <input type="date" id="f-date" style="width:auto;">
+        </div>
+        <div class="field">
+          <label>กะทำงาน *</label>
+          <select id="f-shift" onchange="clearErr('err-shift')" style="width:auto;min-width:140px;">
+            <option value="">-- เลือกกะ --</option>
+            <option value="กะเช้า">กะเช้า</option>
+            <option value="กะดึก">กะดึก</option>
+          </select>
+          <div class="err-msg" id="err-shift">กรุณาเลือกกะทำงาน</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- checklist -->
+    <div class="card">
+      <div class="card-title">รายการตรวจสอบ 10 ข้อ</div>
+      <div class="err-alert" id="err-checks">กรุณาตอบทุกข้อ</div>
+      <div id="checklist-container"></div>
+    </div>
+
+    <!-- result -->
+    <div class="result-banner" id="result-banner">
+      <div class="rl">สรุปผลการตรวจสอบ (อัตโนมัติ)</div>
+      <div class="rv" id="result-text"></div>
+    </div>
+
+    <!-- details -->
+    <div class="card">
+      <label id="detail-label" style="font-size:13px;font-weight:700;color:#d97706;margin-bottom:8px;">ระบุรายละเอียด</label>
+      <textarea id="f-details" rows="4" placeholder="ระบุหมายเหตุ/รายละเอียดเพิ่มเติม (ถ้ามี)" oninput="clearErr('err-details')"></textarea>
+      <div class="err-msg" id="err-details">กรุณาระบุรายละเอียด (บังคับเมื่อผิดปกติ)</div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary" onclick="submitForm()">บันทึกการตรวจสอบ</button>
+      <button class="btn-secondary" onclick="showScreen('home')">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN: MANAGER (จป.หัวหน้างาน)
+════════════════════════════════════════════════ -->
+<div id="screen-manager" class="screen">
+  <div class="inner-wide">
+    <div class="page-header">
+      <button class="btn-back" onclick="showScreen('home')">← กลับ</button>
+      <div class="page-header-info">
+        <div class="sub">จป. / หัวหน้างาน</div>
+        <div class="title">ทวนสอบการตรวจสอบ</div>
+      </div>
+      <div style="margin-left:auto;">
+        <span id="pending-verify-pill" class="pill abnormal">รอทวนสอบ 0</span>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-inspect" onclick="switchTab('inspect')">🔍 รายการทั้งหมด (<span id="tc-inspect">0</span>)</button>
+      <button class="tab-btn" id="tab-verify" onclick="switchTab('verify')">🦺 รอทวนสอบ / ทวนแล้ว (<span id="tc-verify">0</span>)</button>
+    </div>
+
+    <div id="mgr-list"></div>
+
+    <!-- PDF export (ไม่ต้องใส่ชื่อ Supervisor) -->
+    <div class="card" style="margin-top:20px;">
+      <div class="card-title">📄 ส่งออกรายงาน PDF รายเดือน</div>
+      <div class="pdf-row">
+        <div>
+          <label>เลือกเดือน</label>
+          <input type="month" id="export-month-mgr">
+        </div>
+        <div>
+          <button class="btn-blue" onclick="exportPDF('export-month-mgr','')">⬇ ดาวน์โหลด PDF</button>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:8px;">
+        * PDF จะสร้างตารางตรวจสอบประจำเดือน รายจุดชาร์จ พร้อมรายละเอียดทุกรายการ
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN: SUPERVISOR
+════════════════════════════════════════════════ -->
+<div id="screen-supervisor" class="screen">
+  <div class="inner-wide">
+    <div class="page-header">
+      <button class="btn-back" onclick="showScreen('home')">← กลับ</button>
+      <div class="page-header-info">
+        <div class="sub">SUPERVISOR</div>
+        <div class="title">อนุมัติการตรวจสอบ</div>
+      </div>
+      <div style="margin-left:auto;">
+        <span id="pending-approve-pill" class="pill" style="background:rgba(37,99,235,.1);color:#2563eb;">รออนุมัติ 0</span>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tab-approve" onclick="switchTab('approve')">⭐ รออนุมัติ / อนุมัติแล้ว (<span id="tc-approve">0</span>)</button>
+    </div>
+
+    <div id="sup-list"></div>
+
+    <!-- PDF export พร้อมช่องชื่อ Supervisor -->
+    <div class="card" style="margin-top:20px;">
+      <div class="card-title">📄 ส่งออกรายงาน PDF รายเดือน</div>
+      <div class="pdf-row">
+        <div>
+          <label>เลือกเดือน</label>
+          <input type="month" id="export-month-sup">
+        </div>
+        <div>
+          <button class="btn-blue" onclick="exportPDFSup()">⬇ ดาวน์โหลด PDF</button>
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <label>ชื่อ Supervisor ขึ้นไป / ผู้อนุมัติ <span style="color:#dc2626;">*</span></label>
+        <input type="text" id="pdf-approver-name-sup" placeholder="ระบุชื่อ-นามสกุล (บังคับ)" style="max-width:340px;">
+        <div id="err-sup-approver" style="font-size:11px;color:#dc2626;display:none;margin-top:4px;">กรุณาระบุชื่อ Supervisor ก่อนดาวน์โหลด</div>
+      </div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:8px;">
+        * PDF จะสร้างตารางตรวจสอบประจำเดือน รายจุดชาร์จ พร้อมรายละเอียดทุกรายการ
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SCREEN: HISTORY
+════════════════════════════════════════════════ -->
+<div id="screen-history" class="screen">
+  <div class="inner-wide">
+    <div class="page-header">
+      <button class="btn-back" onclick="showScreen('home')">← กลับ</button>
+      <div class="page-header-info">
+        <div class="sub">HISTORY</div>
+        <div class="title">ประวัติการตรวจสอบ</div>
+      </div>
+    </div>
+
+    <div class="filter-row">
+      <input type="month" id="hist-month" onchange="renderHistory()">
+      <select id="hist-point" onchange="renderHistory()" style="width:auto;">
+        <option value="">-- ทุกจุดชาร์จ --</option>
+        <option>อาคาร B3 ชั้น 1 (DS Domestic)</option>
+        <option>อาคาร B4 ชั้น 1 จุดโหลดงาน (DS Export)</option>
+        <option>อาคาร B4 ชั้น 1 หน้าห้องน้ำ (DS Export)</option>
+      </select>
+    </div>
+
+    <div class="hist-stats">
+      <div class="hist-stat" style="border:1px solid rgba(217,119,6,.2)"><div class="n" id="hs-total" style="color:#d97706">0</div><div class="l">ทั้งหมด</div></div>
+      <div class="hist-stat" style="border:1px solid rgba(22,163,74,.2)"><div class="n" id="hs-normal" style="color:#16a34a">0</div><div class="l">ปกติ</div></div>
+      <div class="hist-stat" style="border:1px solid rgba(220,38,38,.2)"><div class="n" id="hs-abnormal" style="color:#dc2626">0</div><div class="l">ผิดปกติ</div></div>
+      <div class="hist-stat" style="border:1px solid rgba(37,99,235,.2)"><div class="n" id="hs-approved" style="color:#2563eb">0</div><div class="l">อนุมัติแล้ว</div></div>
+    </div>
+
+    <div id="history-list"></div>
+
+    <div class="card" style="margin-top:20px;">
+      <div class="card-title">📄 ส่งออกรายงาน PDF รายเดือน</div>
+      <div class="pdf-row">
+        <div>
+          <label>เลือกเดือน</label>
+          <input type="month" id="export-month-hist">
+        </div>
+        <div>
+          <button class="btn-blue" onclick="exportPDF('export-month-hist','')">⬇ ดาวน์โหลด PDF</button>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:8px;">
+        * PDF จะสร้างตารางตรวจสอบประจำเดือน รายจุดชาร์จ พร้อมรายละเอียดทุกรายการ
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- toast -->
+<div id="toast"></div>
+
+<!-- ── PIN Modal ── -->
+<div id="pin-modal" style="
+  display:none; position:fixed; inset:0; z-index:9999;
+  background:rgba(0,0,0,0.5); align-items:center; justify-content:center;
+">
+  <div style="
+    background:#fff; border-radius:20px; padding:32px 28px;
+    width:100%; max-width:340px; margin:20px; box-shadow:0 20px 60px rgba(0,0,0,.3);
+    text-align:center;
+  ">
+    <div style="font-size:28px;margin-bottom:8px;" id="pin-icon">🔐</div>
+    <div style="font-size:16px;font-weight:800;color:#1e293b;margin-bottom:4px;" id="pin-title">ใส่รหัสผ่าน</div>
+    <div style="font-size:12px;color:#94a3b8;margin-bottom:20px;" id="pin-sub">กรุณาระบุรหัส 4 หลัก</div>
+    <div style="display:flex;gap:10px;justify-content:center;margin-bottom:16px;" id="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div id="pin-error" style="font-size:12px;color:#dc2626;min-height:18px;margin-bottom:8px;"></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:240px;margin:0 auto;">
+      <button class="pin-key" onclick="pinKey('1')">1</button>
+      <button class="pin-key" onclick="pinKey('2')">2</button>
+      <button class="pin-key" onclick="pinKey('3')">3</button>
+      <button class="pin-key" onclick="pinKey('4')">4</button>
+      <button class="pin-key" onclick="pinKey('5')">5</button>
+      <button class="pin-key" onclick="pinKey('6')">6</button>
+      <button class="pin-key" onclick="pinKey('7')">7</button>
+      <button class="pin-key" onclick="pinKey('8')">8</button>
+      <button class="pin-key" onclick="pinKey('9')">9</button>
+      <button class="pin-key" onclick="closePinModal()" style="background:#f1f5f9;color:#94a3b8;font-size:12px;">ยกเลิก</button>
+      <button class="pin-key" onclick="pinKey('0')">0</button>
+      <button class="pin-key" onclick="pinBackspace()" style="font-size:18px;">⌫</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Verify Modal ── -->
+<div id="verify-modal" style="
+  display:none; position:fixed; inset:0; z-index:9998;
+  background:rgba(0,0,0,0.45); align-items:center; justify-content:center;
+">
+  <div style="
+    background:#fff; border-radius:16px; padding:28px 24px;
+    width:100%; max-width:380px; margin:20px; box-shadow:0 20px 60px rgba(0,0,0,.25);
+  ">
+    <div style="font-size:15px;font-weight:800;color:#1e293b;margin-bottom:6px;">👔 ทวนสอบโดยหัวหน้างาน</div>
+    <div style="font-size:13px;color:#64748b;margin-bottom:16px;">กรุณาระบุชื่อหัวหน้างานที่ทวนสอบ</div>
+    <label style="font-size:12px;color:#64748b;display:block;margin-bottom:6px;">ชื่อหัวหน้างาน *</label>
+    <input type="text" id="verify-manager-name" placeholder="ระบุชื่อ-นามสกุล"
+      style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;
+             font-family:'Sarabun',sans-serif;font-size:14px;color:#1e293b;
+             background:#f8fafc;outline:none;margin-bottom:6px;"
+      oninput="document.getElementById('verify-name-err').style.display='none'"
+      onkeydown="if(event.key==='Enter')confirmVerify()">
+    <div id="verify-name-err" style="font-size:11px;color:#dc2626;display:none;margin-bottom:10px;">กรุณาระบุชื่อหัวหน้างาน</div>
+    <div style="display:flex;gap:10px;margin-top:12px;">
+      <button onclick="confirmVerify()" style="
+        flex:1;padding:12px;background:linear-gradient(135deg,#22c55e,#16a34a);
+        color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;
+        cursor:pointer;font-family:'Sarabun',sans-serif;">✓ ยืนยันทวนสอบ</button>
+      <button onclick="closeVerifyModal()" style="
+        padding:12px 18px;background:#f1f5f9;color:#64748b;
+        border:1px solid #e2e8f0;border-radius:10px;font-size:14px;
+        cursor:pointer;font-family:'Sarabun',sans-serif;">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════
+const CHECKLIST_ITEMS = [
+  "พื้นที่จุดชาร์จมีการระบายอากาศเพียงพอ",
+  "ไม่มีสิ่งกีดขวางบริเวณจุดชาร์จ",
+  "ไม่มีแหล่งกำเนิดประกายไฟใกล้พื้นที่ชาร์จ",
+  "สายไฟและปลั๊กเครื่องชาร์จไม่ชำรุด",
+  "ขั้วต่อแบตเตอรี่และสายชาร์จแน่น",
+  "เครื่องชาร์จทำงานปกติ",
+  "แบตเตอรี่ไม่มีรอยแตก บวม หรือรั่ว",
+  "ไม่มีน้ำหรือของเหลวบริเวณพื้นที่ชาร์จ",
+  "พื้นที่สะอาด ไม่มีวัสดุไวไฟ",
+  "ถังดับเพลิงพร้อมใช้งาน"
+];
+
+const MONTHS_TH = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน",
+  "กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+
+let records = [];
+let currentPoint = "";
+let supTab = "inspect";
+
+// ═══════════════════════════════════════════
+// CONFIG — วาง URL ของ Apps Script ตรงนี้
+// ═══════════════════════════════════════════
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby49IPA771UdsK2yG4oSdwCFmPd6tJ8Y0mkWMwORsLC-tmsNuQl3wPq9PfgyY49mOs/exec";
+// ════════════════════════════════════════════
+
+let isSyncing = false;
+
+function migrateRecord(r) {
+  return {
+    managerVerified: false,
+    managerVerifiedBy: "",
+    managerVerifiedAt: null,
+    supervisorApproved: false,
+    shift: "",
+    manager: "",
+    details: "",
+    ...r
+  };
+}
+
+// ── โหลดจาก Google Sheets ──
+async function loadRecords() {
+  showSyncStatus("กำลังโหลดข้อมูล...", "loading");
+  try {
+    const res = await fetch(SCRIPT_URL + "?action=getAll");
+    const data = await res.json();
+    if (data.ok) {
+      records = data.records.map(migrateRecord);
+      // cache ใน localStorage ด้วย (offline fallback)
+      try { localStorage.setItem("battery_records_cache", JSON.stringify(records)); } catch {}
+      showSyncStatus("ซิงค์แล้ว ✓", "ok");
+    } else {
+      throw new Error(data.error);
+    }
+  } catch(err) {
+    console.warn("Sheets unavailable, using cache:", err);
+    try {
+      const cache = JSON.parse(localStorage.getItem("battery_records_cache") || "[]");
+      records = cache.map(migrateRecord);
+    } catch { records = []; }
+    showSyncStatus("ใช้ข้อมูล offline", "warn");
+  }
+  renderHome();
+}
+
+// ── บันทึก record ใหม่ไปยัง Sheets ──
+async function saveRecord(rec) {
+  // อัปเดต local ก่อนทันที
+  records.unshift(rec);
+  try { localStorage.setItem("battery_records_cache", JSON.stringify(records)); } catch {}
+
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "save", record: rec })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    showSyncStatus("บันทึกแล้ว ✓", "ok");
+  } catch(err) {
+    showSyncStatus("⚠ บันทึก offline (จะซิงค์ภายหลัง)", "warn");
+    console.warn("Save failed:", err);
+  }
+}
+
+// ── อัปเดต record (ทวนสอบ/อนุมัติ) ──
+async function syncRecord(rec) {
+  try { localStorage.setItem("battery_records_cache", JSON.stringify(records)); } catch {}
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "update", record: rec })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+    showSyncStatus("อัปเดตแล้ว ✓", "ok");
+  } catch(err) {
+    showSyncStatus("⚠ อัปเดต offline", "warn");
+  }
+}
+
+// ── ลบ record ──
+async function deleteFromSheets(id) {
+  try { localStorage.setItem("battery_records_cache", JSON.stringify(records)); } catch {}
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "delete", id })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error);
+  } catch(err) {
+    console.warn("Delete sync failed:", err);
+  }
+}
+
+// ── import ข้อมูลเก่าจาก localStorage ──
+async function importFromLocalStorage() {
+  const old = JSON.parse(localStorage.getItem("battery_records") || "[]");
+  if (old.length === 0) { alert("ไม่มีข้อมูลเก่าใน localStorage"); return; }
+  if (!confirm(`พบข้อมูลเก่า ${old.length} รายการ ต้องการนำเข้า Google Sheets หรือไม่?`)) return;
+  showSyncStatus("กำลังนำเข้าข้อมูล...", "loading");
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "bulkSave", records: old })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      localStorage.removeItem("battery_records");
+      showSyncStatus(`นำเข้าสำเร็จ ${data.count} รายการ ✓`, "ok");
+      await loadRecords();
+    } else throw new Error(data.error);
+  } catch(err) {
+    showSyncStatus("นำเข้าล้มเหลว: " + err.message, "warn");
+  }
+}
+
+// ── legacy: saveRecords ใช้กับโค้ดเดิม (no-op, sync ทีละ record แทน) ──
+function saveRecords() {
+  try { localStorage.setItem("battery_records_cache", JSON.stringify(records)); } catch {}
+}
+
+// ── sync status indicator ──
+function showSyncStatus(msg, type) {
+  const el = document.getElementById("sync-status");
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = type === "ok" ? "#16a34a" : type === "warn" ? "#d97706" : "#2563eb";
+  if (type === "ok") setTimeout(() => { el.textContent = ""; }, 3000);
+}
+
+// ═══════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════
+function genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2); }
+function fmtTs(ts) {
+  const d = new Date(ts);
+  return `${d.getDate()} ${MONTHS_TH[d.getMonth()]} ${d.getFullYear()+543} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+}
+function todayStr() { return new Date().toISOString().split("T")[0]; }
+function thisMonth() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+}
+function recMonth(ts) {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+}
+function isToday(ts) {
+  return new Date(ts).toDateString() === new Date().toDateString();
+}
+
+// ═══════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════
+let toastTimer;
+function showToast(msg, type="success") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.style.background = type === "success" ? "#22c55e" : "#ef4444";
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 3000);
+}
+
+// ═══════════════════════════════════════════
+// SCREEN ROUTING
+// ═══════════════════════════════════════════
+// ── PIN CONFIG (เปลี่ยนรหัสได้ตรงนี้) ──
+const PIN_MANAGER    = "1234";   // รหัส จป.หัวหน้างาน
+const PIN_SUPERVISOR = "5678";   // รหัส Supervisor
+
+let pinTarget = null;
+let pinBuffer = "";
+
+function requestPin(screen, icon, title, sub) {
+  pinTarget = screen;
+  pinBuffer = "";
+  document.getElementById("pin-icon").textContent  = icon;
+  document.getElementById("pin-title").textContent = title;
+  document.getElementById("pin-sub").textContent   = sub;
+  document.getElementById("pin-error").textContent = "";
+  [0,1,2,3].forEach(i => {
+    const d = document.getElementById("pd"+i);
+    d.classList.remove("filled","error");
+  });
+  document.getElementById("pin-modal").classList.add("open");
+}
+
+function pinKey(k) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += k;
+  const i = pinBuffer.length - 1;
+  document.getElementById("pd"+i).classList.add("filled");
+  if (pinBuffer.length === 4) setTimeout(checkPin, 120);
+}
+
+function pinBackspace() {
+  if (!pinBuffer.length) return;
+  const i = pinBuffer.length - 1;
+  document.getElementById("pd"+i).classList.remove("filled");
+  pinBuffer = pinBuffer.slice(0,-1);
+}
+
+function checkPin() {
+  const correct = pinTarget === "manager" ? PIN_MANAGER : PIN_SUPERVISOR;
+  if (pinBuffer === correct) {
+    const target = pinTarget; // save before closePinModal resets it
+    closePinModal();
+    showScreen(target);
+  } else {
+    [0,1,2,3].forEach(i => {
+      document.getElementById("pd"+i).classList.add("error");
+    });
+    document.getElementById("pin-error").textContent = "รหัสไม่ถูกต้อง ลองใหม่อีกครั้ง";
+    setTimeout(() => {
+      pinBuffer = "";
+      [0,1,2,3].forEach(i => {
+        const d = document.getElementById("pd"+i);
+        d.classList.remove("filled","error");
+      });
+      document.getElementById("pin-error").textContent = "";
+    }, 800);
+  }
+}
+
+function closePinModal() {
+  document.getElementById("pin-modal").classList.remove("open");
+  pinTarget = null;
+  pinBuffer = "";
+}
+
+function showScreen(name) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById("screen-" + name).classList.add("active");
+  window.scrollTo(0, 0);
+  if (name === "home") renderHome();
+  if (name === "manager") { supTab = "inspect"; renderManager(); }
+  if (name === "supervisor") { supTab = "approve"; renderSupervisor(); }
+  if (name === "history") renderHistory();
+}
+
+// ═══════════════════════════════════════════
+// HOME
+// ═══════════════════════════════════════════
+function homePointChange() {
+  const v = document.getElementById("home-point").value;
+  const otherWrap = document.getElementById("home-point-other-wrap");
+  const otherInput = document.getElementById("home-point-other");
+  if (v === "other") {
+    otherWrap.style.display = "block";
+    otherInput.focus();
+    document.getElementById("btn-start").disabled = !otherInput.value.trim();
+  } else {
+    otherWrap.style.display = "none";
+    document.getElementById("btn-start").disabled = !v;
+  }
+}
+
+function homeOtherInput() {
+  const v = document.getElementById("home-point-other").value.trim();
+  document.getElementById("btn-start").disabled = !v;
+}
+
+function startForm() {
+  const sel = document.getElementById("home-point").value;
+  if (!sel) return;
+  if (sel === "other") {
+    const custom = document.getElementById("home-point-other").value.trim();
+    if (!custom) return;
+    currentPoint = custom;
+  } else {
+    currentPoint = sel;
+  }
+  openForm(currentPoint);
+}
+
+function renderHome() {
+  const today = records.filter(r => isToday(r.timestamp));
+  document.getElementById("stat-today").textContent = today.length;
+  document.getElementById("stat-normal").textContent = today.filter(r => r.overallResult === "normal").length;
+  document.getElementById("stat-abnormal").textContent = today.filter(r => r.overallResult === "abnormal").length;
+
+  const pendingVerify  = records.filter(r => !r.managerVerified).length;
+  const pendingApprove = records.filter(r => r.managerVerified && !r.supervisorApproved).length;
+  const mgrBadge = document.getElementById("mgr-badge");
+  const supBadge = document.getElementById("sup-badge");
+  if (mgrBadge) { mgrBadge.textContent = pendingVerify; mgrBadge.style.display = pendingVerify > 0 ? "flex" : "none"; }
+  if (supBadge) { supBadge.textContent = pendingApprove; supBadge.style.display = pendingApprove > 0 ? "flex" : "none"; }
+
+  // default export month
+  const em = document.getElementById("export-month");
+  if (!em.value) em.value = thisMonth();
+
+  // today list
+  const sec = document.getElementById("today-section");
+  const list = document.getElementById("today-list");
+  if (today.length === 0) { sec.style.display = "none"; return; }
+  sec.style.display = "block";
+  list.innerHTML = today.slice(0,3).map(r => `
+    <div class="today-item ${r.overallResult === 'abnormal' ? 'abnormal' : ''}">
+      <div>
+        <div class="ti-name">${r.inspector} — ${r.chargingPoint}</div>
+        <div class="ti-time">${fmtTs(r.timestamp)}</div>
+      </div>
+      <span class="pill ${r.overallResult}">${r.overallResult === 'normal' ? '✓ ปกติ' : '✗ ผิดปกติ'}</span>
+    </div>
+  `).join("");
+}
+
+// ═══════════════════════════════════════════
+// FORM
+// ═══════════════════════════════════════════
+function openForm(point) {
+  document.getElementById("form-point-label").textContent = "📍 " + point;
+  document.getElementById("f-inspector").value = "";
+  document.getElementById("f-department").value = "";
+  document.getElementById("f-date").value = todayStr();
+  document.getElementById("f-shift").value = "";
+  document.getElementById("f-details").value = "";
+  document.getElementById("result-banner").className = "result-banner";
+  document.getElementById("result-banner").classList.remove("show");
+  document.getElementById("detail-label").textContent = "ระบุรายละเอียด";
+  document.getElementById("detail-label").style.color = "#d97706";
+  document.querySelectorAll(".err-msg,.err-alert").forEach(e => e.classList.remove("show"));
+
+  // build checklist
+  const c = document.getElementById("checklist-container");
+  c.innerHTML = CHECKLIST_ITEMS.map((item, i) => `
+    <div class="check-row" id="crow-${i}">
+      <div class="check-num" id="cnum-${i}">${i+1}</div>
+      <div class="check-label">${item}</div>
+      <select class="check-select" id="csel-${i}" onchange="onCheckChange(${i})">
+        <option value="">&gt;&gt;กรุณาเลือก&lt;&lt;</option>
+        <option value="normal">✓ ปกติ</option>
+        <option value="abnormal">✗ ผิดปกติ</option>
+      </select>
+    </div>
+  `).join("");
+
+  showScreen("form");
+}
+
+function onCheckChange(i) {
+  const val = document.getElementById("csel-"+i).value;
+  const row = document.getElementById("crow-"+i);
+  row.className = "check-row" + (val === "normal" ? " normal" : val === "abnormal" ? " abnormal" : "");
+  updateResult();
+}
+
+function getChecks() {
+  return CHECKLIST_ITEMS.map((_, i) => document.getElementById("csel-"+i).value);
+}
+
+function updateResult() {
+  const checks = getChecks();
+  const allAnswered = checks.every(c => c !== "");
+  const anyAbnormal = checks.some(c => c === "abnormal");
+  const allNormal = checks.every(c => c === "normal");
+
+  const banner = document.getElementById("result-banner");
+  const text = document.getElementById("result-text");
+  const dlabel = document.getElementById("detail-label");
+
+  if (!allAnswered) {
+    banner.className = "result-banner";
+    dlabel.textContent = "ระบุรายละเอียด";
+    dlabel.style.color = "#d97706";
+    return;
+  }
+
+  if (anyAbnormal) {
+    banner.className = "result-banner abnormal show";
+    text.textContent = "✗ ผิดปกติ";
+    dlabel.textContent = "ระบุรายละเอียด * (บังคับ)";
+    dlabel.style.color = "#dc2626";
+  } else {
+    banner.className = "result-banner normal show";
+    text.textContent = "✓ ปกติ";
+    dlabel.textContent = "ระบุรายละเอียด";
+    dlabel.style.color = "#d97706";
+  }
+}
+
+function getOverallResult() {
+  const checks = getChecks();
+  if (checks.some(c => c === "abnormal")) return "abnormal";
+  if (checks.every(c => c === "normal")) return "normal";
+  return "";
+}
+
+function clearErr(id) { document.getElementById(id).classList.remove("show"); }
+
+async function submitForm() {
+  let valid = true;
+  const inspector = document.getElementById("f-inspector").value.trim();
+  const dept = document.getElementById("f-department").value;
+  const shift = document.getElementById("f-shift").value;
+  const checks = getChecks();
+  const details = document.getElementById("f-details").value.trim();
+  const overall = getOverallResult();
+
+  if (!inspector) { document.getElementById("err-inspector").classList.add("show"); valid = false; }
+  if (!dept) { document.getElementById("err-department").classList.add("show"); valid = false; }
+  if (!shift) { document.getElementById("err-shift").classList.add("show"); valid = false; }
+  if (checks.some(c => c === "")) { document.getElementById("err-checks").classList.add("show"); valid = false; }
+  if (overall === "abnormal" && !details) { document.getElementById("err-details").classList.add("show"); valid = false; }
+
+  if (!valid) return;
+
+  const rec = {
+    id: genId(),
+    timestamp: Date.now(),
+    inspector,
+    department: dept,
+    chargingPoint: currentPoint,
+    date: document.getElementById("f-date").value,
+    shift: document.getElementById("f-shift").value,
+    manager: "",
+    checks,
+    overallResult: overall,
+    details,
+    supervisorApproved: false,
+    managerVerified: false
+  };
+
+  await saveRecord(rec);
+  showToast("บันทึกการตรวจสอบเรียบร้อย");
+  showScreen("home");
+  document.getElementById("home-point").value = "";
+  document.getElementById("btn-start").disabled = true;
+  renderHome();
+}
+
+// ═══════════════════════════════════════════
+// SUPERVISOR
+// ═══════════════════════════════════════════
+function switchTab(tab) {
+  supTab = tab;
+  ["inspect","verify","approve"].forEach(t => {
+    const el = document.getElementById("tab-"+t);
+    if (el) el.classList.toggle("active", tab === t);
+  });
+  // render correct screen
+  const mgrScreen = document.getElementById("screen-manager");
+  const supScreen = document.getElementById("screen-supervisor");
+  if (mgrScreen && mgrScreen.classList.contains("active")) renderManager();
+  else renderSupervisor();
+}
+
+// ── Shared record card renderer ──
+function recCard(r, actionBtn) {
+  const isVerified = r.managerVerified;
+  const isApproved = r.supervisorApproved;
+  return `
+  <div class="rec-card ${r.overallResult === 'abnormal' ? 'abnormal' : ''}">
+    <div class="rec-top">
+      <div style="flex:1;">
+        <div class="pill-row">
+          <span class="pill ${r.overallResult}">${r.overallResult === 'normal' ? '✓ ปกติ' : '✗ ผิดปกติ'}</span>
+          ${isVerified ? `<span class="pill" style="background:rgba(37,99,235,.1);color:#2563eb;font-size:10px;">✓ ทวนสอบ${r.managerVerifiedBy ? ' โดย ' + r.managerVerifiedBy : ''}</span>` : ''}
+          ${isApproved ? '<span class="pill" style="background:rgba(22,163,74,.1);color:#16a34a;font-size:10px;">✓ อนุมัติ</span>' : ''}
+          <span class="pill-time">${fmtTs(r.timestamp)}</span>
+        </div>
+        <div class="rec-name">${r.inspector}</div>
+        <div class="rec-sub">แผนก: ${r.department} | ${r.chargingPoint} | ${r.shift || "-"}</div>
+        ${r.details ? `<div class="rec-detail">📝 ${r.details}</div>` : ""}
+        <div class="chips">${r.checks.map((c,i) => `<span class="chip ${c}">${i+1}</span>`).join("")}</div>
+      </div>
+      ${actionBtn}
+    </div>
+  </div>`;
+}
+
+// ── จป.หัวหน้างาน screen ──
+function renderManager() {
+  const allRecs    = [...records].sort((a,b) => b.timestamp - a.timestamp);
+  const verifyList = allRecs.filter(r => !r.managerVerified);
+  const verifiedList = allRecs.filter(r => r.managerVerified);
+
+  const pvPill = document.getElementById("pending-verify-pill");
+  const tcInspect = document.getElementById("tc-inspect");
+  const tcVerify  = document.getElementById("tc-verify");
+  if (pvPill)    pvPill.textContent    = "รอทวนสอบ " + verifyList.length;
+  if (tcInspect) tcInspect.textContent = allRecs.length;
+  if (tcVerify)  tcVerify.textContent  = verifyList.length + " / ทวนแล้ว " + verifiedList.length;
+
+  const list     = supTab === "inspect" ? allRecs : [...verifyList, ...verifiedList];
+  const emptyMsg = supTab === "inspect" ? "ยังไม่มีรายการตรวจสอบ" : "ไม่มีรายการ";
+  const el       = document.getElementById("mgr-list");
+  if (!el) return;
+  if (list.length === 0) { el.innerHTML = `<div class="empty"><div class="ico">📋</div>${emptyMsg}</div>`; return; }
+
+  el.innerHTML = list.map(r => {
+    let btn = "";
+    if (supTab === "inspect") {
+      btn = `<button class="btn-red-sm" onclick="deleteRec('${r.id}')">🗑 ลบ</button>`;
+    } else {
+      if (!r.managerVerified) {
+        btn = `<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+          <button class="btn-green" onclick="verifyRec('${r.id}')">✓ ทวนสอบ</button>
+          <button class="btn-red-sm" onclick="deleteRec('${r.id}')">🗑 ลบ</button>
+        </div>`;
+      } else {
+        btn = `<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+          <span class="approved-stamp" style="color:#2563eb;">✓ ทวนสอบแล้ว</span>
+          <button class="btn-red-sm" onclick="deleteRec('${r.id}')">🗑 ลบ</button>
+        </div>`;
+      }
+    }
+    return recCard(r, btn);
+  }).join("");
+}
+
+// ── Supervisor screen ──
+function renderSupervisor() {
+  const allRecs    = [...records].sort((a,b) => b.timestamp - a.timestamp);
+  const approveList = allRecs.filter(r => r.managerVerified && !r.supervisorApproved);
+  const doneList    = allRecs.filter(r => r.supervisorApproved);
+
+  const paPill    = document.getElementById("pending-approve-pill");
+  const tcApprove = document.getElementById("tc-approve");
+  if (paPill)    paPill.textContent    = "รออนุมัติ " + approveList.length;
+  if (tcApprove) tcApprove.textContent = approveList.length + " / อนุมัติแล้ว " + doneList.length;
+
+  const list = [...approveList, ...doneList];
+  const el   = document.getElementById("sup-list");
+  if (!el) return;
+  if (list.length === 0) { el.innerHTML = `<div class="empty"><div class="ico">📋</div>ไม่มีรายการรออนุมัติ</div>`; return; }
+
+  el.innerHTML = list.map(r => {
+    let btn = "";
+    if (!r.supervisorApproved) {
+      btn = `<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+        <button class="btn-green" onclick="approveRec('${r.id}')">✓ อนุมัติ</button>
+        <button class="btn-red-sm" onclick="deleteRec('${r.id}')">🗑 ลบ</button>
+      </div>`;
+    } else {
+      btn = `<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+        <span class="approved-stamp">✓ อนุมัติแล้ว</span>
+        <button class="btn-red-sm" onclick="deleteRec('${r.id}')">🗑 ลบ</button>
+      </div>`;
+    }
+    return recCard(r, btn);
+  }).join("");
+}
+
+let pendingVerifyId = null;
+
+function verifyRec(id) {
+  pendingVerifyId = id;
+  document.getElementById("verify-manager-name").value = "";
+  document.getElementById("verify-name-err").style.display = "none";
+  document.getElementById("verify-modal").classList.add("open");
+  setTimeout(() => document.getElementById("verify-manager-name").focus(), 100);
+}
+
+async function confirmVerify() {
+  const name = document.getElementById("verify-manager-name").value.trim();
+  if (!name) {
+    document.getElementById("verify-name-err").style.display = "block";
+    return;
+  }
+  const r = records.find(x => x.id === pendingVerifyId);
+  if (r) {
+    r.managerVerified = true;
+    r.managerVerifiedBy = name;
+    r.managerVerifiedAt = Date.now();
+    await syncRecord(r);
+  }
+  closeVerifyModal();
+  showToast("ทวนสอบเรียบร้อย โดย " + name);
+  renderManager();
+}
+
+function closeVerifyModal() {
+  document.getElementById("verify-modal").classList.remove("open");
+  pendingVerifyId = null;
+}
+
+async function approveRec(id) {
+  const r = records.find(x => x.id === id);
+  if (r) {
+    r.supervisorApproved = true;
+    await syncRecord(r);
+  }
+  showToast("อนุมัติเรียบร้อย");
+  renderSupervisor();
+}
+
+async function deleteRec(id) {
+  if (!confirm("ต้องการลบรายการนี้หรือไม่?")) return;
+  records = records.filter(x => x.id !== id);
+  await deleteFromSheets(id);
+  showToast("ลบรายการเรียบร้อย", "error");
+  const mgrActive = document.getElementById("screen-manager")?.classList.contains("active");
+  if (mgrActive) renderManager(); else renderSupervisor();
+  renderHome();
+}
+
+// ═══════════════════════════════════════════
+// HISTORY
+// ═══════════════════════════════════════════
+function renderHistory() {
+  const month = document.getElementById("hist-month").value || thisMonth();
+  const point = document.getElementById("hist-point").value;
+  if (!document.getElementById("hist-month").value) document.getElementById("hist-month").value = month;
+
+  const filtered = records.filter(r => {
+    const mok = recMonth(r.timestamp) === month;
+    const pok = !point || r.chargingPoint === point;
+    return mok && pok;
+  });
+
+  document.getElementById("hs-total").textContent = filtered.length;
+  document.getElementById("hs-normal").textContent = filtered.filter(r => r.overallResult === "normal").length;
+  document.getElementById("hs-abnormal").textContent = filtered.filter(r => r.overallResult === "abnormal").length;
+  document.getElementById("hs-approved").textContent = filtered.filter(r => r.supervisorApproved).length;
+
+  const el = document.getElementById("history-list");
+  if (filtered.length === 0) {
+    el.innerHTML = `<div class="empty"><div class="ico">📭</div>ไม่พบข้อมูลในช่วงเวลานี้</div>`;
+    return;
+  }
+
+  const sorted = [...filtered].sort((a,b) => b.timestamp - a.timestamp);
+  el.innerHTML = sorted.map(r => `
+    <div class="rec-card ${r.overallResult === 'abnormal' ? 'abnormal' : ''}">
+      <div class="rec-top">
+        <div style="flex:1">
+          <div class="pill-row">
+            <span class="pill ${r.overallResult}">${r.overallResult === 'normal' ? '✓ ปกติ' : '✗ ผิดปกติ'}</span>
+            ${r.supervisorApproved ? '<span class="pill approved">✓ หัวหน้าอนุมัติ</span>' : ""}
+          </div>
+          <div class="rec-name">${r.inspector} — ${r.department}</div>
+          <div class="rec-sub">${r.chargingPoint} | ${fmtTs(r.timestamp)}</div>
+          ${r.details ? `<div style="margin-top:6px;font-size:12px;color:#92400e;">📝 ${r.details}</div>` : ""}
+        </div>
+        <div class="chips" style="align-self:flex-start;max-width:140px;">
+          ${r.checks.map((c,i) => `
+            <span class="chip ${c}" style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;" title="${CHECKLIST_ITEMS[i]}">${i+1}</span>
+          `).join("")}
+        </div>
+      </div>
+    </div>
+  `).join("");
+}
+
+// ═══════════════════════════════════════════
+// PDF EXPORT
+// ═══════════════════════════════════════════
+function exportPDFSup() {
+  const name = (document.getElementById("pdf-approver-name-sup") || {value:""}).value.trim();
+  const errEl = document.getElementById("err-sup-approver");
+  if (!name) {
+    if (errEl) errEl.style.display = "block";
+    document.getElementById("pdf-approver-name-sup").focus();
+    return;
+  }
+  if (errEl) errEl.style.display = "none";
+  exportPDF("export-month-sup", name);
+}
+
+function buildSheetHTML(shiftFiltered, daysInMonth, thYear, monthName, approverName, shiftLabel, shiftColor) {
+  const bdr = "border:1px solid #999;";
+  const cellBase = `${bdr}padding:4px 3px;font-size:9px;font-family:'Sarabun',sans-serif;`;
+  const cellC = `${cellBase}text-align:center;`;
+  const cellL = `${cellBase}text-align:left;`;
+  const headBase = `${bdr}padding:6px 4px;font-size:9px;font-weight:700;text-align:center;background:#dbe5f1;font-family:'Sarabun',sans-serif;`;
+
+  const dayMap = {};
+  for (let d = 1; d <= daysInMonth; d++) dayMap[d] = [];
+  shiftFiltered.forEach(r => { const d = new Date(r.timestamp).getDate(); dayMap[d].push(r); });
+
+  const deptSet  = [...new Set(shiftFiltered.map(r => r.department))].join(", ");
+  const pointSet = [...new Set(shiftFiltered.map(r => r.chargingPoint))].join(", ");
+
+  let dayHeaders = "";
+  for (let d = 1; d <= daysInMonth; d++)
+    dayHeaders += `<th style="${headBase}min-width:24px;width:24px;">${d}</th>`;
+
+  let checklistRows = "";
+  CHECKLIST_ITEMS.forEach((item, idx) => {
+    let dayCells = "";
+    for (let d = 1; d <= daysInMonth; d++) {
+      const recs = dayMap[d];
+      if (!recs.length) { dayCells += `<td style="${cellC}"></td>`; continue; }
+      const r = recs[0], val = r.checks[idx];
+      const ok = val==="normal", abn = val==="abnormal";
+      dayCells += `<td style="${cellC}background:${ok?"#e2f0d9":abn?"#fce4d6":"#fff"};color:${ok?"#375623":abn?"#c00000":"#000"};font-weight:700;">${ok?"✓":abn?"✗":""}</td>`;
+    }
+    checklistRows += `<tr style="background:${idx%2===0?"#fff":"#f9f9f9"};">
+      <td style="${cellC}font-weight:700;">${idx+1}</td>
+      <td style="${cellL}min-width:200px;">${item}</td>${dayCells}
+      <td style="${cellC}"></td></tr>`;
+  });
+
+  let summaryDayCells = "", shiftCells = "", inspectorCells = "", managerCells = "";
+  const allMgrNames = new Set();
+  let detailNotes = "";
+  for (let d = 1; d <= daysInMonth; d++) {
+    const recs = dayMap[d];
+    if (!recs.length) {
+      summaryDayCells += `<td style="${cellC}"></td>`;
+      shiftCells      += `<td style="${cellC}"></td>`;
+      inspectorCells  += `<td style="${cellC}"></td>`;
+      managerCells    += `<td style="${cellC}"></td>`;
+      continue;
+    }
+    const r = recs[0];
+    const ok = r.overallResult === "normal";
+    summaryDayCells += `<td style="${cellC}background:${ok?"#e2f0d9":"#fce4d6"};color:${ok?"#375623":"#c00000"};font-weight:700;">${ok?"✓":"✗"}</td>`;
+    const sLabel = r.shift || "";
+    const sBg = sLabel==="กะเช้า"?"#fff9e6":sLabel==="กะดึก"?"#e8eaf6":"#fff";
+    shiftCells     += `<td style="${cellC}font-size:8px;background:${sBg};">${sLabel}</td>`;
+    inspectorCells += `<td style="${cellC}font-size:8px;">${r.inspector ? r.inspector.split(" ")[0] : ""}</td>`;
+    const mgr = (r.managerVerifiedBy||"").trim();
+    if (mgr) allMgrNames.add(mgr);
+    managerCells += `<td style="${cellC}font-size:8px;">${mgr}</td>`;
+    if (r.overallResult==="abnormal" && r.details) detailNotes += `<br>วันที่ ${d}: ${r.details}`;
+  }
+  const managerSet = [...allMgrNames].join(", ");
+
+  return `
+<div class="doc-title">แบบตรวจสอบความปลอดภัยสถานที่ชาร์จแบตเตอรี่ก่อนใช้งาน
+  <span style="font-size:11px;font-weight:700;color:${shiftColor};background:${shiftColor}22;padding:2px 10px;border-radius:20px;margin-left:8px;">${shiftLabel}</span>
+</div>
+<table style="margin-bottom:8px;border:none;"><tr>
+  <td style="border:none;padding:2px 4px;font-size:10px;"><span style="font-weight:700;">แผนก / หน่วยงาน :</span> ${deptSet||'.................................'}</td>
+  <td style="border:none;padding:2px 4px;font-size:10px;"><span style="font-weight:700;">จุดชาร์จ :</span> ${pointSet||'.................................'}</td>
+  <td style="border:none;padding:2px 4px;font-size:10px;"><span style="font-weight:700;">เดือน :</span> ${monthName}</td>
+  <td style="border:none;padding:2px 4px;font-size:10px;"><span style="font-weight:700;">ปี พ.ศ. :</span> ${thYear}</td>
+</tr><tr>
+  <td colspan="4" style="border:none;padding:2px 4px;font-size:10px;">
+    <span style="font-weight:700;">ชื่อหัวหน้างาน :</span> <span style="font-weight:600;">${managerSet||'.................................................'}</span>
+  </td>
+</tr></table>
+<table>
+  <thead><tr>
+    <th style="${headBase}width:30px;">ลำดับ</th>
+    <th style="${headBase}min-width:200px;text-align:left;padding-left:6px;">รายละเอียดการตรวจสอบ</th>
+    ${dayHeaders}
+    <th style="${headBase}min-width:50px;">หมายเหตุ</th>
+  </tr></thead>
+  <tbody>
+    ${checklistRows}
+    <tr style="background:#fff3cd;">
+      <td colspan="2" style="${cellL}font-weight:700;background:#fff3cd;">สรุปผลการตรวจสอบ (ปกติ ✓ / ผิดปกติ ✗)</td>
+      ${summaryDayCells}<td style="${cellC}"></td></tr>
+    <tr><td colspan="2" style="${cellL}background:#f2f2f2;font-weight:700;">กะทำงาน</td>
+      ${shiftCells}<td style="${cellC}"></td></tr>
+    <tr><td colspan="2" style="${cellL}background:#f2f2f2;font-weight:700;">ชื่อผู้ตรวจสอบ</td>
+      ${inspectorCells}<td style="${cellC}"></td></tr>
+    <tr><td colspan="2" style="${cellL}background:#e8f4fd;font-weight:700;">ชื่อหัวหน้างาน</td>
+      ${managerCells}<td style="${cellC}"></td></tr>
+  </tbody>
+</table>
+${detailNotes ? `<div style="margin-top:8px;font-size:9px;color:#c00000;"><strong>หมายเหตุ (ผิดปกติ):</strong>${detailNotes}</div>` : ""}
+<table style="margin-top:20px;border:none;width:100%;">
+  <tr>
+    <td style="border:none;width:35%;"></td>
+    <td style="border:none;text-align:center;width:30%;">
+      <div style="margin-bottom:8px;min-height:48px;display:flex;align-items:flex-end;justify-content:center;">
+        <span style="font-size:13px;font-weight:600;">${approverName||""}</span>
+      </div>
+      <div style="border-top:1px solid #333;padding-top:5px;font-size:10px;font-weight:700;">ลงชื่อ Supervisor ขึ้นไป / ผู้อนุมัติ</div>
+      <div style="font-size:10px;margin-top:4px;">( ${approverName||".................................................."} )</div>
+      <div style="font-size:10px;margin-top:4px;">วันที่ ................ เดือน ........................ พ.ศ. .............</div>
+    </td>
+    <td style="border:none;width:35%;"></td>
+  </tr>
+</table>`;
+}
+
+function exportPDF(monthElId, approverOverride) {
+  const monthId    = monthElId || "export-month-sup";
+  const yearMonth  = (document.getElementById(monthId) || {}).value || thisMonth();
+  const [year, month] = yearMonth.split("-").map(Number);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const filtered = records.filter(r => recMonth(r.timestamp) === yearMonth);
+  if (filtered.length === 0) { alert("ไม่มีข้อมูลในเดือนที่เลือก"); return; }
+
+  const thYear = year + 543;
+  const monthName = MONTHS_TH[month - 1];
+  const approverName = approverOverride !== undefined ? approverOverride : (document.getElementById("pdf-approver-name-sup") || {value:""}).value.trim();
+
+  const morningRecs = filtered.filter(r => r.shift === "กะเช้า");
+  const nightRecs   = filtered.filter(r => r.shift === "กะดึก");
+  const otherRecs   = filtered.filter(r => r.shift !== "กะเช้า" && r.shift !== "กะดึก");
+
+  const sheets = [];
+  if (morningRecs.length > 0)
+    sheets.push(buildSheetHTML(morningRecs, daysInMonth, thYear, monthName, approverName, "กะเช้า", "#d97706"));
+  if (nightRecs.length > 0)
+    sheets.push(buildSheetHTML(nightRecs, daysInMonth, thYear, monthName, approverName, "กะดึก", "#2563eb"));
+  if (otherRecs.length > 0)
+    sheets.push(buildSheetHTML(otherRecs, daysInMonth, thYear, monthName, approverName, "ไม่ระบุกะ", "#64748b"));
+
+  if (sheets.length === 0) { alert("ไม่มีข้อมูลในเดือนที่เลือก"); return; }
+
+  // stub variables used in old html template (no longer needed)
+  const deptSet="", pointSet="", managerSet="", checklistRows="", summaryDayCells="", shiftCells="", inspectorCells="", managerCells="", detailNotes="";
+
+  const html = `<!DOCTYPE html>
+<html lang="th"><head>
+<meta charset="UTF-8">
+<title>แบบตรวจสอบความปลอดภัยฯ ${monthName} ${thYear}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap');
+  * { box-sizing:border-box; margin:0; padding:0; font-family:'Sarabun',sans-serif; }
+  body { background:white; padding:12px; font-size:10px; }
+  table { border-collapse:collapse; width:100%; }
+  th, td { border:1px solid #999; }
+  .doc-title { font-size:13px; font-weight:800; text-align:center; margin-bottom:8px; }
+  .page-break { page-break-before:always; margin-top:24px; padding-top:16px; border-top:3px solid #dbe5f1; }
+  @media print {
+    body { padding:6px; }
+    @page { size:A3 landscape; margin:8mm; }
+    .page-break { border-top:none; margin-top:0; padding-top:0; }
+  }
+</style>
+</head>
+<body>
+${sheets.map((s,i) => i===0 ? s : `<div class="page-break">${s}</div>`).join("")}
+<div style="text-align:right;font-size:8px;color:#888;margin-top:8px;">
+  พิมพ์จากระบบตรวจสอบความปลอดภัยสถานที่ชาร์จแบตเตอรี่ก่อนใช้งาน | วันที่พิมพ์: ${new Date().toLocaleDateString("th-TH")}
+</div>
+<script>window.onload = () => window.print();<\/script>
+</body></html>`;
+
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  window.open(URL.createObjectURL(blob), "_blank");
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+loadRecords(); // async — renderHome() called inside after load
+
+// ── Auto-refresh ทุก 30 วินาที เฉพาะหน้า Home ──
+let autoRefreshTimer = null;
+
+function startAutoRefresh() {
+  stopAutoRefresh();
+  autoRefreshTimer = setInterval(async () => {
+    const homeScreen = document.getElementById("screen-home");
+    if (homeScreen && homeScreen.classList.contains("active")) {
+      await silentRefresh();
+    }
+  }, 30000);
+}
+
+function stopAutoRefresh() {
+  if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+}
+
+async function silentRefresh() {
+  try {
+    const res = await fetch(SCRIPT_URL + "?action=getAll");
+    const data = await res.json();
+    if (data.ok) {
+      records = data.records.map(migrateRecord);
+      try { localStorage.setItem("battery_records_cache", JSON.stringify(records)); } catch {}
+      renderHome();
+      // อัปเดต supervisor/history ถ้าเปิดอยู่
+      const sup = document.getElementById("screen-supervisor");
+      const hist = document.getElementById("screen-history");
+      const mgr = document.getElementById("screen-manager");
+      if (mgr && mgr.classList.contains("active")) renderManager();
+      if (sup && sup.classList.contains("active")) renderSupervisor();
+      if (hist && hist.classList.contains("active")) renderHistory();
+      // แสดง countdown ถัดไป
+      startCountdown();
+    }
+  } catch(err) {
+    console.warn("Auto-refresh failed:", err);
+  }
+}
+
+let countdownTimer = null;
+function startCountdown() {
+  if (countdownTimer) clearInterval(countdownTimer);
+  let sec = 30;
+  const el = document.getElementById("sync-status");
+  countdownTimer = setInterval(() => {
+    if (!el) return;
+    sec--;
+    if (sec <= 0) {
+      clearInterval(countdownTimer);
+    } else {
+      el.textContent = `🔄 รีเฟรชอัตโนมัติใน ${sec} วิ`;
+      el.style.color = "#94a3b8";
+    }
+  }, 1000);
+}
+
+startAutoRefresh();
+startCountdown();
+</script>
+</body>
+</html>
